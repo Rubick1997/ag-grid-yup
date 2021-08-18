@@ -1,30 +1,46 @@
+import { CognitoUserPool } from "amazon-cognito-identity-js";
 import "./App.css";
 import Table from "./Table";
 import { userSchema } from "./Validations/UserValidation";
+import { useForm } from "react-hook-form";
 
 function App() {
-  const createUser = async (event) => {
+  const { register, handleSubmit } = useForm();
+
+  const poolData = {
+    UserPoolId:process.env.REACT_APP_USER_POOL_ID,
+    ClientId: process.env.REACT_APP_CLIENT_ID,
+  };
+
+  const UserPool = new CognitoUserPool(poolData);
+
+  const createUser = async (data, event) => {
     event.preventDefault();
     let formData = {
-      name: event.target[0].value,
-      email: event.target[1].value,
-      data: event.target[2].value,
+      email: data.email,
+      password: data.password,
     };
     const isValid = await userSchema.isValid(formData);
-    console.log(isValid)
+    if (!isValid) alert("No password or user");
+    else
+      UserPool.signUp(data.email, data.password, [], null, (err, data) => {
+        if (err) console.log(err);
+        console.log(data);
+      });
   };
 
   return (
     <div className="App">
-      <form onSubmit={createUser}>
-        <input type="text" placeholder="Name..." />
-        <input type="text" placeholder="email" />
-        <input type="text" placeholder="password" />
+      <form onSubmit={handleSubmit(createUser)}>
+        <input type="text" {...register("email")} placeholder="email" />
+        <input
+          type="current-password"
+          {...register("password")}
+          placeholder="password"
+        />
         <input type="submit" />
-        <Table/>
       </form>
-
-
+      <Table />
     </div>
   );
 }
