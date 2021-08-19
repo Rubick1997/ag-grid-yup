@@ -1,33 +1,48 @@
 import { AuthenticationDetails, CognitoUser } from "amazon-cognito-identity-js";
-import React, { createContext } from "react";
+import React, { createContext, useState } from "react";
 import { UserPool } from "../UserPool";
 
 export const AccountContext = createContext();
 
 const Accounts = (props) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   const logout = () => {
     const user = UserPool.getCurrentUser();
     if (user) {
       user.signOut();
+      setIsLoggedIn(false);
     }
   };
 
-  const getSession = async () => {
+  const getSession = async () =>
     await new Promise((resolve, reject) => {
       const user = UserPool.getCurrentUser();
       if (user) {
-        user.getSession((err, session) => {
+        user.getSession(async (err, session) => {
           if (err) {
             reject();
           } else {
-            resolve(session);
+            const attributes = await new Promise((resolve, reject) => {
+              user.getUserAttributes((err, attributes) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  const results = {};
+                  attributes.forEach(
+                    ({ Name, Value }) => (results[Name] = Value)
+                  );
+                  resolve(results);
+                }
+              });
+            });
+            resolve({ user, ...session, ...attributes });
           }
         });
       } else {
         reject();
       }
     });
-  };
 
   const authenticate = async (email, password) => {
     await new Promise((resolve, reject) => {
@@ -41,6 +56,7 @@ const Accounts = (props) => {
       });
       user.authenticateUser(authDetails, {
         onSuccess: (data) => {
+          setIsLoggedIn(true);
           console.log("onSuccess:", data);
           resolve(data);
         },
@@ -62,6 +78,8 @@ const Accounts = (props) => {
         authenticate,
         getSession,
         logout,
+        isLoggedIn,
+        setIsLoggedIn,
       }}
     >
       {props.children}

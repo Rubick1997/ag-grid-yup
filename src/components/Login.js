@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 const Login = () => {
   const { register, handleSubmit } = useForm();
 
-  const { authenticate } = useContext(AccountContext);
+  const { authenticate, isLoggedIn } = useContext(AccountContext);
 
   const signUser = async (data, event) => {
     event.preventDefault();
@@ -26,15 +26,19 @@ const Login = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(signUser)}>
-      <input type="text" {...register("email")} placeholder="email" />
-      <input
-        type="current-password"
-        {...register("password")}
-        placeholder="password"
-      />
-      <button type="submit"> Login </button>
-    </form>
+    <>
+      {!isLoggedIn && (
+        <form onSubmit={handleSubmit(signUser)}>
+          <input type="text" {...register("email")} placeholder="email" />
+          <input
+            type="current-password"
+            {...register("password")}
+            placeholder="password"
+          />
+          <button type="submit"> Login </button>
+        </form>
+      )}
+    </>
   );
 };
 
